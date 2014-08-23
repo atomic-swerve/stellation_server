@@ -9,7 +9,7 @@ namespace stellation_server
 {
     enum AdminCommands : byte
     {
-        UserReport, Broadcast, Lock, Boot, BootAll, Shutdown
+        UserReport, Broadcast, Lock, Unlock, Boot, BootAll, Shutdown
     }
 
     class Server
@@ -17,14 +17,11 @@ namespace stellation_server
         NetServer m_server;
         NetIncomingMessage inc;
 
-        List<Room> rooms;
-        List<TargetState> targets;
-
         Server() { }
 
         void SetUpServer()
         {
-            NetPeerConfiguration config = new NetPeerConfiguration("StellationServer");
+            NetPeerConfiguration config = new NetPeerConfiguration(Properties.Settings.Default.serverName);
             config.Port = Properties.Settings.Default.port;
             config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
             config.MaximumConnections = Properties.Settings.Default.maxConnections;
@@ -44,6 +41,13 @@ namespace stellation_server
             {
                 switch (inc.MessageType)
                 {
+                    case NetIncomingMessageType.ConnectionApproval:
+                        if (inc.ReadString().Equals(Properties.Settings.Default.playerKey))
+                            inc.SenderConnection.Approve();
+                        else
+                            inc.SenderConnection.Deny();
+                        break;
+
                     case NetIncomingMessageType.StatusChanged:
                         Console.WriteLine("New status: " + ((NetConnectionStatus)inc.ReadByte()).ToString());
                         break;
@@ -64,6 +68,13 @@ namespace stellation_server
                                     //Prevent anyone new from joining
                                     case AdminCommands.Lock:
                                         m_server.Configuration.AcceptIncomingConnections = false;
+                                        Console.WriteLine("Blocking new incoming connections");
+                                        break;
+                                    //Unlock
+                                    //Allow new incoming connections
+                                    case AdminCommands.Unlock:
+                                        m_server.Configuration.AcceptIncomingConnections = true;
+                                        Console.WriteLine("Allowing new incoming connections");
                                         break;
                                     //Boot
                                     case AdminCommands.Boot:
@@ -75,6 +86,7 @@ namespace stellation_server
                                     //Shutdown
                                     case AdminCommands.Shutdown:
                                         TakedownServer(inc.ReadString());
+                                        Console.WriteLine("Server Shutdown Successful");
                                         return false;
                                 }
                             }
