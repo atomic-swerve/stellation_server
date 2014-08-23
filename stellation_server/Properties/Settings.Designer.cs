@@ -46,5 +46,17 @@ namespace stellation_server.Properties {
                 this["maxConnections"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("c0llar")]
+        public string adminKey {
+            get {
+                return ((string)(this["adminKey"]));
+            }
+            set {
+                this["adminKey"] = value;
+            }
+        }
     }
 }

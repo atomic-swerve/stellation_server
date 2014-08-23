@@ -8,5 +8,8 @@
     <Setting Name="maxConnections" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5000</Value>
     </Setting>
+    <Setting Name="adminKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">c0llar</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

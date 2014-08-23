@@ -7,6 +7,11 @@ using Lidgren.Network;
 
 namespace stellation_server
 {
+    enum AdminCommands : byte
+    {
+        UserReport, Broadcast, Lock, Boot, BootAll, Shutdown
+    }
+
     class Server
     {
         NetServer m_server;
@@ -42,11 +47,45 @@ namespace stellation_server
                     case NetIncomingMessageType.StatusChanged:
                         Console.WriteLine("New status: " + ((NetConnectionStatus)inc.ReadByte()).ToString());
                         break;
+
                     case NetIncomingMessageType.Data:
-                        Console.WriteLine("Responding with ping");
-                        NetOutgoingMessage msg = m_server.CreateMessage();
-                        msg.Write("Ping");
-                        m_server.SendMessage(msg, inc.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                        //Check if Admin call
+                        if (inc.ReadBoolean()) 
+                        {
+                            //Check basic authentication
+                            if (inc.ReadString().Equals(Properties.Settings.Default.adminKey)) 
+                            {
+                                //Handle Admin tasks
+                                switch ((AdminCommands)inc.ReadByte())
+                                {
+                                    //Report
+                                    //Broadcast
+                                    //Lock
+                                    //Prevent anyone new from joining
+                                    case AdminCommands.Lock:
+                                        m_server.Configuration.AcceptIncomingConnections = false;
+                                        break;
+                                    //Boot
+                                    case AdminCommands.Boot:
+                                        break;
+                                    //BootAll
+                                    case AdminCommands.BootAll:
+                                        //m_server.Connections.RemoveAll();
+                                        break;
+                                    //Shutdown
+                                    case AdminCommands.Shutdown:
+                                        TakedownServer(inc.ReadString());
+                                        return false;
+                                }
+                            }
+                        }
+                        //Else not an Admin request
+                        else
+                        {
+                            NetOutgoingMessage msg = m_server.CreateMessage();
+                            msg.Write("Ping");
+                            m_server.SendMessage(msg, inc.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                        }
                         break;
                     case NetIncomingMessageType.DebugMessage:
                         Console.WriteLine("Debug: " + inc.ReadString());
@@ -67,7 +106,7 @@ namespace stellation_server
 
             while (true)
             {
-                server.ReadMessages();
+                if (!server.ReadMessages()) break;
             }
         }
     }
