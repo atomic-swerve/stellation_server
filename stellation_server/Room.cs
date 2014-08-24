@@ -10,7 +10,7 @@ namespace stellation_server
     public class Room
     {
         int maxPlayers;
-        List<PlayerState> players;
+        Dictionary<int,PlayerState> players;
         Server m_server;
         Queue<int> availableSlots;
 
@@ -18,7 +18,7 @@ namespace stellation_server
         {
             m_server = s;
             maxPlayers = max;
-            players = new List<PlayerState>();
+            players = new Dictionary<int,PlayerState>();
             availableSlots = new Queue<int>();
         }
 
@@ -28,14 +28,13 @@ namespace stellation_server
             if (availableSlots.Count > 0)
             {
                 index = availableSlots.Dequeue();
-                players.Insert(index, p);
             }
             else
             {
                 index = players.Count;
-                players.Add(p);
             }
 
+            players.Add(index, p);
             NotifyAllUpdate(p);
 
             return index;
@@ -48,7 +47,7 @@ namespace stellation_server
 
         public void RemovePlayer(PlayerState p)
         {
-            players.RemoveAt(p.id);
+            players.Remove(p.id);
             availableSlots.Enqueue(p.id);
             NotifyAllRemoved(p.id);
         }
@@ -58,7 +57,7 @@ namespace stellation_server
             if (players.Count <= 1) return;
 
             List<NetConnection> toNotify = new List<NetConnection>();
-            foreach (PlayerState player in players)
+            foreach (PlayerState player in players.Values)
             {
                 if (player == p)
                 {
@@ -74,7 +73,7 @@ namespace stellation_server
             if (players.Count == 0) return;
 
             List<NetConnection> toNotify = new List<NetConnection>();
-            foreach (PlayerState player in players)
+            foreach (PlayerState player in players.Values)
             {
                 toNotify.Add(player.connection);
             }

@@ -24,7 +24,7 @@ namespace stellation_server
         {
             x = newX;
             y = newY;
-
+            
             if (currentRoom != null)
             {
                 currentRoom.UpdatePlayer(this);

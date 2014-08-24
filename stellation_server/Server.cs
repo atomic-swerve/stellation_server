@@ -51,21 +51,23 @@ namespace stellation_server
         public void SendUpdate(List<NetConnection> conns, PlayerState player)
         {
             NetOutgoingMessage msg = m_server.CreateMessage();
+            msg.Write((byte)PlayerCommands.Update);
             msg.Write(player.id);
             msg.Write(player.x);
             msg.Write(player.y);
             msg.Write(true);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.Unreliable, 0);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableOrdered, 0);
         }
 
         public void SendUpdate(List<NetConnection> conns, int id)
         {
             NetOutgoingMessage msg = m_server.CreateMessage();
+            msg.Write((byte)PlayerCommands.Disconnect);
             msg.Write(id);
             msg.Write(0);
             msg.Write(0);
             msg.Write(false);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.Unreliable, 0);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableOrdered, 0);
         }
 
         bool ReadMessages()
@@ -75,8 +77,6 @@ namespace stellation_server
                 switch (inc.MessageType)
                 {
                     case NetIncomingMessageType.ConnectionApproval:
-                        Console.WriteLine(inc.PeekString());
-                        Console.WriteLine(Properties.Settings.Default.playerKey);
                         if (inc.ReadString() == Properties.Settings.Default.playerKey)
                         {
                             inc.SenderConnection.Approve();
@@ -137,9 +137,11 @@ namespace stellation_server
                             switch((PlayerCommands)inc.ReadByte())
                             { 
                                 case (PlayerCommands.Update):
+                                    //Console.WriteLine("Update request");
                                     onlinePlayers[inc.SenderConnection].UpdateState(inc.ReadFloat(), inc.ReadFloat());
                                     break;
                                 case (PlayerCommands.Disconnect):
+                                    Console.WriteLine("Disconnection request");
                                     onlinePlayers[inc.SenderConnection].Disconnect();
                                     onlinePlayers.Remove(inc.SenderConnection);
                                     break;
@@ -148,6 +150,9 @@ namespace stellation_server
                         break;
                     case NetIncomingMessageType.DebugMessage:
                         Console.WriteLine("Debug: " + inc.ReadString());
+                        break;
+                    case NetIncomingMessageType.WarningMessage:
+                        Console.WriteLine("Warning: " + inc.ReadString());
                         break;
                     default:
                         Console.WriteLine("Unhandled type: " + inc.MessageType);
