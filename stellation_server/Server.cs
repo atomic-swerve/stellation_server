@@ -12,15 +12,28 @@ namespace stellation_server
         UserReport, Broadcast, Lock, Unlock, Boot, BootAll, Shutdown
     }
 
-    class Server
+    enum PlayerCommands : byte
+    {
+        UserReport, Update, Disconnect
+    }
+
+    public class Server
     {
         NetServer m_server;
         NetIncomingMessage inc;
 
-        Server() { }
+        Dictionary<NetConnection, PlayerState> onlinePlayers;
+        List<Room> rooms;
+
+        Server() { 
+            onlinePlayers = new Dictionary<NetConnection,PlayerState>();
+            rooms = new List<Room>();
+        }
 
         void SetUpServer()
         {
+            rooms.Add(new Room(this, 5000));
+
             NetPeerConfiguration config = new NetPeerConfiguration(Properties.Settings.Default.serverName);
             config.Port = Properties.Settings.Default.port;
             config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
@@ -35,6 +48,26 @@ namespace stellation_server
             m_server.Shutdown(message);
         }
 
+        public void SendUpdate(List<NetConnection> conns, PlayerState player)
+        {
+            NetOutgoingMessage msg = m_server.CreateMessage();
+            msg.Write(player.id);
+            msg.Write(player.x);
+            msg.Write(player.y);
+            msg.Write(true);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.Unreliable, 0);
+        }
+
+        public void SendUpdate(List<NetConnection> conns, int id)
+        {
+            NetOutgoingMessage msg = m_server.CreateMessage();
+            msg.Write(id);
+            msg.Write(0);
+            msg.Write(0);
+            msg.Write(false);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.Unreliable, 0);
+        }
+
         bool ReadMessages()
         {
             while ((inc = m_server.ReadMessage()) != null)
@@ -43,7 +76,12 @@ namespace stellation_server
                 {
                     case NetIncomingMessageType.ConnectionApproval:
                         if (inc.ReadString().Equals(Properties.Settings.Default.playerKey))
+                        {
                             inc.SenderConnection.Approve();
+                            PlayerState p = new PlayerState(inc.SenderConnection);
+                            onlinePlayers.Add(inc.SenderConnection, p);
+                            p.MoveToRoom(rooms[0]);
+                        }
                         else
                             inc.SenderConnection.Deny();
                         break;
@@ -94,9 +132,16 @@ namespace stellation_server
                         //Else not an Admin request
                         else
                         {
-                            NetOutgoingMessage msg = m_server.CreateMessage();
-                            msg.Write("Ping");
-                            m_server.SendMessage(msg, inc.SenderConnection, NetDeliveryMethod.ReliableOrdered);
+                            switch((PlayerCommands)inc.ReadByte())
+                            { 
+                                case (PlayerCommands.Update):
+                                    onlinePlayers[inc.SenderConnection].UpdateState(inc.ReadFloat(), inc.ReadFloat());
+                                    break;
+                                case (PlayerCommands.Disconnect):
+                                    onlinePlayers[inc.SenderConnection].Disconnect();
+                                    onlinePlayers.Remove(inc.SenderConnection);
+                                    break;
+                            }
                         }
                         break;
                     case NetIncomingMessageType.DebugMessage:
