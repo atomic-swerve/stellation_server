@@ -14,7 +14,7 @@ namespace stellation_server
 
     enum PlayerCommands : byte
     {
-        UserReport, Update, Disconnect
+        UserReport, Update, Disconnect, Colour
     }
 
     public class Server
@@ -55,8 +55,16 @@ namespace stellation_server
             msg.Write(player.id);
             msg.Write(player.x);
             msg.Write(player.y);
-            msg.Write(true);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableOrdered, 0);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.UnreliableSequenced, 0);
+        }
+
+        public void SendUpdateColour(List<NetConnection> conns, PlayerState player)
+        {
+            NetOutgoingMessage msg = m_server.CreateMessage();
+            msg.Write((byte)PlayerCommands.Update);
+            msg.Write(player.id);
+            msg.Write((byte)player.colour);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableUnordered, 0);
         }
 
         public void SendUpdate(List<NetConnection> conns, int id)
@@ -66,8 +74,7 @@ namespace stellation_server
             msg.Write(id);
             msg.Write(0);
             msg.Write(0);
-            msg.Write(false);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableOrdered, 0);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.UnreliableSequenced, 0);
         }
 
         bool ReadMessages()
@@ -83,6 +90,7 @@ namespace stellation_server
                             PlayerState p = new PlayerState(inc.SenderConnection);
                             onlinePlayers.Add(inc.SenderConnection, p);
                             p.MoveToRoom(rooms[0]);
+                            Console.WriteLine("Total players: " + onlinePlayers.Count);
                         }
                         else
                             inc.SenderConnection.Deny();
@@ -135,15 +143,19 @@ namespace stellation_server
                         else
                         {
                             switch((PlayerCommands)inc.ReadByte())
-                            { 
+                            {
                                 case (PlayerCommands.Update):
                                     //Console.WriteLine("Update request");
                                     onlinePlayers[inc.SenderConnection].UpdateState(inc.ReadFloat(), inc.ReadFloat());
                                     break;
+                                case (PlayerCommands.Colour):
+                                    //Console.WriteLine("Update request");
+                                    onlinePlayers[inc.SenderConnection].UpdateColour((PlayerColours)inc.ReadByte());
+                                    break;
                                 case (PlayerCommands.Disconnect):
-                                    Console.WriteLine("Disconnection request");
                                     onlinePlayers[inc.SenderConnection].Disconnect();
                                     onlinePlayers.Remove(inc.SenderConnection);
+                                    Console.WriteLine("Total players: " + onlinePlayers.Count);
                                     break;
                             }
                         }

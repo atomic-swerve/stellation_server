@@ -35,14 +35,19 @@ namespace stellation_server
             }
 
             players.Add(index, p);
-            NotifyAllUpdate(p);
+            NotifyAllUpdate(p, true);
 
             return index;
         }
 
         public void UpdatePlayer(PlayerState p)
         {
-            NotifyAllUpdate(p);
+            NotifyAllUpdate(p, true);
+        }
+
+        public void UpdatePlayerColour(PlayerState p)
+        {
+            NotifyAllUpdate(p, false);
         }
 
         public void RemovePlayer(PlayerState p)
@@ -52,7 +57,7 @@ namespace stellation_server
             NotifyAllRemoved(p.id);
         }
 
-        void NotifyAllUpdate(PlayerState p)
+        void NotifyAllUpdate(PlayerState p, bool type)
         {
             if (players.Count <= 1) return;
 
@@ -65,7 +70,8 @@ namespace stellation_server
                 }
                 toNotify.Add(player.connection);
             }
-            m_server.SendUpdate(toNotify, p);
+            if (type) m_server.SendUpdate(toNotify, p);
+            else m_server.SendUpdateColour(toNotify, p);
         }
 
         void NotifyAllRemoved(int changed)

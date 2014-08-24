@@ -7,12 +7,19 @@ using Lidgren.Network;
 
 namespace stellation_server
 {
+
+    public enum PlayerColours : byte
+    {
+        Red, Blue, Green, White
+    }
+
     public class PlayerState
     {
         public int id = -1;
         public NetConnection connection;
         public float x = 0;
         public float y = 0;
+        public PlayerColours colour = PlayerColours.White;
 
         public Room currentRoom;
 
@@ -28,6 +35,16 @@ namespace stellation_server
             if (currentRoom != null)
             {
                 currentRoom.UpdatePlayer(this);
+            }
+        }
+
+        public void UpdateColour(PlayerColours c)
+        {
+            colour = c;
+
+            if (currentRoom != null)
+            {
+                currentRoom.UpdatePlayerColour(this);
             }
         }
 
