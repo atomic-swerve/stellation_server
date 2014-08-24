@@ -35,19 +35,15 @@ namespace stellation_server
             }
 
             players.Add(index, p);
-            NotifyAllUpdate(p, true);
+            NotifyOneUpdate(p);
+            NotifyAllUpdate(p);
 
             return index;
         }
 
         public void UpdatePlayer(PlayerState p)
         {
-            NotifyAllUpdate(p, true);
-        }
-
-        public void UpdatePlayerColour(PlayerState p)
-        {
-            NotifyAllUpdate(p, false);
+            NotifyAllUpdate(p);
         }
 
         public void RemovePlayer(PlayerState p)
@@ -56,8 +52,25 @@ namespace stellation_server
             availableSlots.Enqueue(p.id);
             NotifyAllRemoved(p.id);
         }
+        
+        void NotifyOneUpdate(PlayerState p)
+        {
+            if (players.Count <= 1) return;
 
-        void NotifyAllUpdate(PlayerState p, bool type)
+            List<NetConnection> l = new List<NetConnection>(1);
+            l.Add(p.connection);
+
+            foreach (PlayerState player in players.Values)
+            {
+                if (player == p)
+                {
+                    continue;
+                }
+                m_server.SendUpdate(l, player);
+            }
+        }
+
+        void NotifyAllUpdate(PlayerState p)
         {
             if (players.Count <= 1) return;
 
@@ -70,8 +83,7 @@ namespace stellation_server
                 }
                 toNotify.Add(player.connection);
             }
-            if (type) m_server.SendUpdate(toNotify, p);
-            else m_server.SendUpdateColour(toNotify, p);
+            m_server.SendUpdate(toNotify, p);
         }
 
         void NotifyAllRemoved(int changed)

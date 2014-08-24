@@ -19,35 +19,27 @@ namespace stellation_server
         public NetConnection connection;
         public float x = 0;
         public float y = 0;
-        public PlayerColours colour = PlayerColours.White;
+        public PlayerColours colour;
 
         public Room currentRoom;
 
         public PlayerState(NetConnection conn) {
             connection = conn;
+            colour = PlayerColours.White;
         }
 
-        public void UpdateState(float newX, float newY)
+        public void UpdateState(float newX, float newY, PlayerColours c)
         {
             x = newX;
             y = newY;
+            colour = c;
             
             if (currentRoom != null)
             {
                 currentRoom.UpdatePlayer(this);
             }
         }
-
-        public void UpdateColour(PlayerColours c)
-        {
-            colour = c;
-
-            if (currentRoom != null)
-            {
-                currentRoom.UpdatePlayerColour(this);
-            }
-        }
-
+        
         public void Disconnect()
         {
             currentRoom.RemovePlayer(this);

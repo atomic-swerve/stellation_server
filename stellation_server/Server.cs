@@ -14,7 +14,7 @@ namespace stellation_server
 
     enum PlayerCommands : byte
     {
-        UserReport, Update, Disconnect, Colour
+        UserReport, Update, Disconnect
     }
 
     public class Server
@@ -55,26 +55,16 @@ namespace stellation_server
             msg.Write(player.id);
             msg.Write(player.x);
             msg.Write(player.y);
+            msg.Write((byte)player.colour);
             m_server.SendMessage(msg, conns, NetDeliveryMethod.UnreliableSequenced, 0);
         }
-
-        public void SendUpdateColour(List<NetConnection> conns, PlayerState player)
-        {
-            NetOutgoingMessage msg = m_server.CreateMessage();
-            msg.Write((byte)PlayerCommands.Update);
-            msg.Write(player.id);
-            msg.Write((byte)player.colour);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableUnordered, 0);
-        }
-
+        
         public void SendUpdate(List<NetConnection> conns, int id)
         {
             NetOutgoingMessage msg = m_server.CreateMessage();
             msg.Write((byte)PlayerCommands.Disconnect);
             msg.Write(id);
-            msg.Write(0);
-            msg.Write(0);
-            m_server.SendMessage(msg, conns, NetDeliveryMethod.UnreliableSequenced, 0);
+            m_server.SendMessage(msg, conns, NetDeliveryMethod.ReliableUnordered, 0);
         }
 
         bool ReadMessages()
@@ -146,11 +136,7 @@ namespace stellation_server
                             {
                                 case (PlayerCommands.Update):
                                     //Console.WriteLine("Update request");
-                                    onlinePlayers[inc.SenderConnection].UpdateState(inc.ReadFloat(), inc.ReadFloat());
-                                    break;
-                                case (PlayerCommands.Colour):
-                                    //Console.WriteLine("Update request");
-                                    onlinePlayers[inc.SenderConnection].UpdateColour((PlayerColours)inc.ReadByte());
+                                    onlinePlayers[inc.SenderConnection].UpdateState(inc.ReadFloat(), inc.ReadFloat(), (PlayerColours)inc.ReadByte());
                                     break;
                                 case (PlayerCommands.Disconnect):
                                     onlinePlayers[inc.SenderConnection].Disconnect();
