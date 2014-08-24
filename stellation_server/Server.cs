@@ -75,7 +75,9 @@ namespace stellation_server
                 switch (inc.MessageType)
                 {
                     case NetIncomingMessageType.ConnectionApproval:
-                        if (inc.ReadString().Equals(Properties.Settings.Default.playerKey))
+                        Console.WriteLine(inc.PeekString());
+                        Console.WriteLine(Properties.Settings.Default.playerKey);
+                        if (inc.ReadString() == Properties.Settings.Default.playerKey)
                         {
                             inc.SenderConnection.Approve();
                             PlayerState p = new PlayerState(inc.SenderConnection);
